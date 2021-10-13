@@ -1,6 +1,6 @@
 import sveltePreprocess from "svelte-preprocess";
-// import node from "@sveltejs/adapter-node";
-const netlify = require("@sveltejs/adapter-netlify");
+
+import netlify from "@sveltejs/adapter-netlify";
 
 /** @type {import('@sveltejs/kit').Config} */
 export default {
