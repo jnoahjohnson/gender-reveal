@@ -10,19 +10,20 @@
     "@supabase/supabase-js": "^1.24.0",
     "@sveltejs/adapter-netlify": "^1.0.0-next.33",
     "@sveltejs/adapter-node": "next",
+    "@sveltejs/adapter-vercel": "^1.0.0-next.0",
     "@sveltejs/kit": "next",
     "autoprefixer": "^10.3.7",
     "cssnano": "^5.0.8",
+    "encoding": "^0.1.13",
     "postcss": "^8.3.9",
     "postcss-load-config": "^3.1.0",
+    "stream-json": "^1.7.3",
     "supabase-ui-svelte": "^0.1.1",
     "svelte": "^3.34.0",
     "svelte-preprocess": "^4.9.8",
     "tailwindcss": "^2.2.16",
     "tslib": "^2.0.0",
-    "typescript": "^4.0.0",
-    "encoding": "^0.1.13",
-    "stream-json": "^1.7.3"
+    "typescript": "^4.0.0"
   },
   "type": "module"
 }
