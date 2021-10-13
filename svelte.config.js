@@ -1,6 +1,6 @@
 import sveltePreprocess from "svelte-preprocess";
 
-import adapterNetlify from "@sveltejs/adapter-netlify";
+import adapter from "@sveltejs/adapter-netlify";
 
 /** @type {import('@sveltejs/kit').Config} */
 export default {
@@ -15,16 +15,16 @@ export default {
     // By default, `npm run build` will create a standard Node app.
     // You can create optimized builds for different platforms by
     // specifying a different adapter
-    adapter: adapterNetlify(),
+    adapter: adapter(),
 
     // hydrate the <div id="svelte"> element in src/app.html
     target: "#svelte",
 
     vite: {
       server: {
-      ssr: {
-                noExternal: ['@supabase/supabase-js']
-            },
+        ssr: {
+          noExternal: ["@supabase/supabase-js"],
+        },
         hmr: {
           clientPort: process.env.HMR_HOST ? 443 : 24678,
           host: process.env.HMR_HOST

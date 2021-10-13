@@ -16619,9 +16619,13 @@ async function render_response({
 					],
 					page: {
 						host: ${page && page.host ? s$1(page.host) : "location.host"}, // TODO this is redundant
-						path: ${s$1(page && page.path)},
-						query: new URLSearchParams(${page ? s$1(page.query.toString()) : ""}),
-						params: ${page && s$1(page.params)}
+						path: ${page && page.path ? try_serialize(page.path, (error3) => {
+      throw new Error(`Failed to serialize page.path: ${error3.message}`);
+    }) : null},
+						query: new URLSearchParams(${page && page.query ? s$1(page.query.toString()) : ""}),
+						params: ${page && page.params ? try_serialize(page.params, (error3) => {
+      throw new Error(`Failed to serialize page.params: ${error3.message}`);
+    }) : null}
 					}
 				}` : "null"}
 			});
