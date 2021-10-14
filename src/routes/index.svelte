@@ -56,4 +56,5 @@
     Thank you!
   </div>
   {/if}
+  <a href="/results">Check Current Results</a>
 </main>
