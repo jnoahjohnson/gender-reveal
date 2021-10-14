@@ -20,10 +20,18 @@ export const auth = supabase.auth;
 // TODO: add your queries/inserts/updates/deletes here
 export const guesses = {
   async all() {
-    console.log("here");
     const { data } = await supabase.from("guesses").select("*");
 
-    console.log("data", data);
+    return data;
+  },
+};
+
+export const getWinners = {
+  async all() {
+    const { data } = await supabase
+      .from("guesses")
+      .select("*")
+      .filter("guess_is_boy", "eq", "true");
 
     return data;
   },
