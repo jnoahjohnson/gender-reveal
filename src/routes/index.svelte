@@ -53,7 +53,7 @@
   </div>
   {:else}
   <div>
-    Thank you!
+    Thank you very much!
   </div>
   {/if}
   <a href="/results">Check Current Results</a>
