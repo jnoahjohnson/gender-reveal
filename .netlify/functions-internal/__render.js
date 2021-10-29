@@ -9712,12 +9712,12 @@ var require_helpers2 = __commonJS({
       if (!url)
         url = window.location.href;
       name = name.replace(/[\[\]]/g, "\\$&");
-      var regex = new RegExp("[?&#]" + name + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
-      if (!results)
+      var regex = new RegExp("[?&#]" + name + "(=([^&#]*)|&|#|$)"), results2 = regex.exec(url);
+      if (!results2)
         return null;
-      if (!results[2])
+      if (!results2[2])
         return "";
-      return decodeURIComponent(results[2].replace(/\+/g, " "));
+      return decodeURIComponent(results2[2].replace(/\+/g, " "));
     }
     exports.getParameterByName = getParameterByName;
   }
@@ -17549,9 +17549,9 @@ function init(settings = default_settings) {
     amp: false,
     dev: false,
     entry: {
-      file: assets + "/_app/start-513a9c74.js",
+      file: assets + "/_app/start-5e282d79.js",
       css: [assets + "/_app/assets/start-464e9d0a.css"],
-      js: [assets + "/_app/start-513a9c74.js", assets + "/_app/chunks/vendor-353cf60b.js"]
+      js: [assets + "/_app/start-5e282d79.js", assets + "/_app/chunks/vendor-7f03c391.js"]
     },
     fetched: void 0,
     floc: false,
@@ -17590,6 +17590,20 @@ var manifest = {
       params: empty,
       a: ["src/routes/__layout.svelte", "src/routes/index.svelte"],
       b: [".svelte-kit/build/components/error.svelte"]
+    },
+    {
+      type: "page",
+      pattern: /^\/get-winner\/?$/,
+      params: empty,
+      a: ["src/routes/__layout.svelte", "src/routes/get-winner.svelte"],
+      b: [".svelte-kit/build/components/error.svelte"]
+    },
+    {
+      type: "page",
+      pattern: /^\/results\/?$/,
+      params: empty,
+      a: ["src/routes/__layout.svelte", "src/routes/results.svelte"],
+      b: [".svelte-kit/build/components/error.svelte"]
     }
   ]
 };
@@ -17608,9 +17622,15 @@ var module_lookup = {
   }),
   "src/routes/index.svelte": () => Promise.resolve().then(function() {
     return index;
+  }),
+  "src/routes/get-winner.svelte": () => Promise.resolve().then(function() {
+    return getWinner;
+  }),
+  "src/routes/results.svelte": () => Promise.resolve().then(function() {
+    return results;
   })
 };
-var metadata_lookup = { "src/routes/__layout.svelte": { "entry": "pages/__layout.svelte-b59747ce.js", "css": ["assets/pages/__layout.svelte-16730091.css"], "js": ["pages/__layout.svelte-b59747ce.js", "chunks/vendor-353cf60b.js"], "styles": [] }, ".svelte-kit/build/components/error.svelte": { "entry": "error.svelte-905f21f4.js", "css": [], "js": ["error.svelte-905f21f4.js", "chunks/vendor-353cf60b.js"], "styles": [] }, "src/routes/index.svelte": { "entry": "pages/index.svelte-5a48c93a.js", "css": [], "js": ["pages/index.svelte-5a48c93a.js", "chunks/vendor-353cf60b.js"], "styles": [] } };
+var metadata_lookup = { "src/routes/__layout.svelte": { "entry": "pages/__layout.svelte-f5b03fd4.js", "css": ["assets/pages/__layout.svelte-1694319a.css"], "js": ["pages/__layout.svelte-f5b03fd4.js", "chunks/vendor-7f03c391.js"], "styles": [] }, ".svelte-kit/build/components/error.svelte": { "entry": "error.svelte-f2cad47d.js", "css": [], "js": ["error.svelte-f2cad47d.js", "chunks/vendor-7f03c391.js"], "styles": [] }, "src/routes/index.svelte": { "entry": "pages/index.svelte-0f4bc463.js", "css": [], "js": ["pages/index.svelte-0f4bc463.js", "chunks/vendor-7f03c391.js", "chunks/db-199d07e8.js"], "styles": [] }, "src/routes/get-winner.svelte": { "entry": "pages/get-winner.svelte-8b3ff6d5.js", "css": [], "js": ["pages/get-winner.svelte-8b3ff6d5.js", "chunks/vendor-7f03c391.js", "chunks/db-199d07e8.js"], "styles": [] }, "src/routes/results.svelte": { "entry": "pages/results.svelte-8ea64d04.js", "css": [], "js": ["pages/results.svelte-8ea64d04.js", "chunks/vendor-7f03c391.js", "chunks/db-199d07e8.js"], "styles": [] } };
 async function load_component(file) {
   const { entry, css: css2, js, styles } = metadata_lookup[file];
   return {
@@ -17635,7 +17655,7 @@ var __layout = /* @__PURE__ */ Object.freeze({
   [Symbol.toStringTag]: "Module",
   "default": _layout
 });
-function load({ error: error2, status }) {
+function load$2({ error: error2, status }) {
   return { props: { error: error2, status } };
 }
 var Error$1 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
@@ -17658,7 +17678,7 @@ var error = /* @__PURE__ */ Object.freeze({
   __proto__: null,
   [Symbol.toStringTag]: "Module",
   "default": Error$1,
-  load
+  load: load$2
 });
 var subscriber_queue = [];
 function readable(value, start) {
@@ -17716,6 +17736,18 @@ readable(supabase.auth.user(), (set) => {
   });
 });
 supabase.auth;
+var guesses = {
+  async all() {
+    const { data } = await supabase.from("guesses").select("*");
+    return data;
+  }
+};
+var getWinners = {
+  async all() {
+    const { data } = await supabase.from("guesses").select("*").filter("guess_is_boy", "eq", "true");
+    return data;
+  }
+};
 var Routes = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let name = "";
   return `
@@ -17727,12 +17759,67 @@ var Routes = create_ssr_component(($$result, $$props, $$bindings, slots) => {
     <input ${""} name="${"name"}" class="${"shadow-lg text-4xl p-2 rounded-lg bg-white text-black"}"${add_attribute("value", name, 0)}>
     <div ${""} class="${"my-4 flex items-center justify-center gap-3"}"><button${add_attribute("class", `${"bg-blue-400 text-white"} rounded-lg py-3 px-6 font-extrabold text-4xl transition-all duration-500`, 0)}>Boy</button>
       <button${add_attribute("class", `${"bg-white text-pink-400 "} rounded-lg py-3 px-6 font-extrabold text-4xl transition-all duration-500`, 0)}>Girl</button></div>
-    <button ${""} class="${"bg-white text-black text-3xl font-bold rounded-lg w-1/2 m-auto my-4 py-3"}">Submit</button></div>`}</main>`;
+    <button ${""} class="${"bg-white text-black text-3xl font-bold rounded-lg w-1/2 m-auto my-4 py-3"}">Submit</button></div>`}
+  <a href="${"/results"}">Check Current Results</a></main>`;
 });
 var index = /* @__PURE__ */ Object.freeze({
   __proto__: null,
   [Symbol.toStringTag]: "Module",
   "default": Routes
+});
+async function load$1() {
+  const winners = await getWinners.all();
+  return { props: { winners } };
+}
+var Get_winner = create_ssr_component(($$result, $$props, $$bindings, slots) => {
+  let { winners } = $$props;
+  let currentWinner = "";
+  if ($$props.winners === void 0 && $$bindings.winners && winners !== void 0)
+    $$bindings.winners(winners);
+  return `<main class="${"h-screen bg-gradient-to-r from-blue-400 to-pink-400 text-white w-full flex flex-col justify-center items-center"}"><h1 class="${"text-6xl mb-2 font-black text-center p-3"}">Guess the Gender!</h1>
+        <h2 class="${"m-4 text-white text-4xl font-extrabold"}">${escape(currentWinner)}</h2>
+        <button class="${"bg-white text-black py-2 px-4 m-2 font-bold text-2xl shadow-lg rounded-lg"}">Get Winner</button></main>`;
+});
+var getWinner = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  [Symbol.toStringTag]: "Module",
+  "default": Get_winner,
+  load: load$1
+});
+async function load() {
+  const guesses$1 = await guesses.all();
+  let boy = 0;
+  let girl = 0;
+  guesses$1.forEach((guess) => {
+    if (guess.guess_is_boy) {
+      boy += 1;
+    } else {
+      girl += 1;
+    }
+  });
+  return { props: { boy, girl } };
+}
+var Results = create_ssr_component(($$result, $$props, $$bindings, slots) => {
+  let { boy } = $$props;
+  let { girl } = $$props;
+  if ($$props.boy === void 0 && $$bindings.boy && boy !== void 0)
+    $$bindings.boy(boy);
+  if ($$props.girl === void 0 && $$bindings.girl && girl !== void 0)
+    $$bindings.girl(girl);
+  return `<main class="${"h-screen bg-gradient-to-r from-blue-400 to-pink-400 text-white w-full flex flex-col justify-center items-center"}"><h1 class="${"text-6xl mb-2 font-black text-center p-3"}">Guess the Gender!</h1>
+
+    <div class="${"flex flex-row items-center text-center mb-16 p-3 max-w-full gap-5"}"><div><h1 class="${"text-4xl font-semibold"}">Boy</h1>
+            <h2 class="${"text-3xl"}">${escape(boy)}</h2></div>
+        <div><h1 class="${"text-4xl font-semibold"}">Girl</h1>
+            <h2 class="${"text-3xl"}">${escape(girl)}</h2></div></div>
+
+     <a href="${"/"}" class="${"hover:underline text-xl"}">Go Back</a></main>`;
+});
+var results = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  [Symbol.toStringTag]: "Module",
+  "default": Results,
+  load
 });
 
 // .svelte-kit/netlify/entry.js
