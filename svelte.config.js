@@ -3,7 +3,6 @@ import sveltePreprocess from "svelte-preprocess";
 // import node from "@sveltejs/adapter-node";
 import adapterNetlify from "@sveltejs/adapter-netlify";
 const dev = process.env.NODE_ENV === "development";
-
 /** @type {import('@sveltejs/kit').Config} */
 export default {
   // Consult https://github.com/sveltejs/svelte-preprocess

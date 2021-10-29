@@ -25,7 +25,11 @@
     "svelte-preprocess": "^4.9.8",
     "tailwindcss": "^2.2.16",
     "tslib": "^2.0.0",
-    "typescript": "^4.0.0"
+    "typescript": "^4.0.0",
+    "bufferutil": "^4.0.3",
+    "cookie": "^0.4.1",
+    "supports-color": "^9.0.2",
+    "utf-8-validate": "^5.0.5"
   },
   "type": "module"
 }

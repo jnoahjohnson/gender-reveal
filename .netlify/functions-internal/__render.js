@@ -4683,7 +4683,7 @@ var require_version = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.version = void 0;
-    exports.version = "1.24.0";
+    exports.version = "1.25.2";
   }
 });
 
@@ -9540,7 +9540,7 @@ var require_version2 = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.version = void 0;
-    exports.version = "1.18.0";
+    exports.version = "1.19.0";
   }
 });
 
@@ -10125,12 +10125,12 @@ var require_GoTrueClient = __commonJS({
         });
         this._recoverSession();
         this._recoverAndRefresh();
-        try {
-          if (settings.detectSessionInUrl && helpers_1.isBrowser() && !!helpers_1.getParameterByName("access_token")) {
-            this.getSessionFromUrl({ storeSession: true });
-          }
-        } catch (error2) {
-          console.log("Error getting session from URL.");
+        if (settings.detectSessionInUrl && helpers_1.isBrowser() && !!helpers_1.getParameterByName("access_token")) {
+          this.getSessionFromUrl({ storeSession: true }).then(({ error: error2 }) => {
+            if (error2) {
+              console.error("Error getting session from URL.", error2);
+            }
+          });
         }
       }
       signUp({ email, password, phone }, options2 = {}) {
@@ -10289,12 +10289,6 @@ var require_GoTrueClient = __commonJS({
             const { data, error: error2 } = yield this.api.refreshAccessToken(refresh_token);
             if (error2) {
               return { session: null, error: error2 };
-            }
-            if (!data) {
-              return {
-                session: null,
-                error: { name: "Invalid refresh_token", message: "JWT token provided is Invalid" }
-              };
             }
             this._saveSession(data);
             this._notifyAllSubscribers("SIGNED_IN");
@@ -11137,7 +11131,7 @@ var require_version3 = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.version = void 0;
-    exports.version = "0.34.0";
+    exports.version = "0.34.1";
   }
 });
 
@@ -11220,7 +11214,7 @@ var require_transformers = __commonJS({
     init_shims();
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.toTimestampString = exports.toArray = exports.toJson = exports.toIntRange = exports.toInt = exports.toFloat = exports.toDateRange = exports.toDate = exports.toBoolean = exports.convertCell = exports.convertColumn = exports.convertChangeData = exports.PostgresTypes = void 0;
+    exports.toTimestampString = exports.toArray = exports.toJson = exports.toNumber = exports.toBoolean = exports.convertCell = exports.convertColumn = exports.convertChangeData = exports.PostgresTypes = void 0;
     var PostgresTypes;
     (function(PostgresTypes2) {
       PostgresTypes2["abstime"] = "abstime";
@@ -11240,6 +11234,7 @@ var require_transformers = __commonJS({
       PostgresTypes2["numeric"] = "numeric";
       PostgresTypes2["oid"] = "oid";
       PostgresTypes2["reltime"] = "reltime";
+      PostgresTypes2["text"] = "text";
       PostgresTypes2["time"] = "time";
       PostgresTypes2["timestamp"] = "timestamp";
       PostgresTypes2["timestamptz"] = "timestamptz";
@@ -11247,129 +11242,119 @@ var require_transformers = __commonJS({
       PostgresTypes2["tsrange"] = "tsrange";
       PostgresTypes2["tstzrange"] = "tstzrange";
     })(PostgresTypes = exports.PostgresTypes || (exports.PostgresTypes = {}));
-    exports.convertChangeData = (columns, records, options2 = {}) => {
-      let result = {};
-      let skipTypes = typeof options2.skipTypes !== "undefined" ? options2.skipTypes : [];
-      Object.entries(records).map(([key, value]) => {
-        result[key] = exports.convertColumn(key, columns, records, skipTypes);
-      });
-      return result;
+    exports.convertChangeData = (columns, record, options2 = {}) => {
+      var _a;
+      const skipTypes = (_a = options2.skipTypes) !== null && _a !== void 0 ? _a : [];
+      return Object.keys(record).reduce((acc, rec_key) => {
+        acc[rec_key] = exports.convertColumn(rec_key, columns, record, skipTypes);
+        return acc;
+      }, {});
     };
-    exports.convertColumn = (columnName, columns, records, skipTypes) => {
-      let column = columns.find((x) => x.name == columnName);
-      if (!column || skipTypes.includes(column.type)) {
-        return noop2(records[columnName]);
-      } else {
-        return exports.convertCell(column.type, records[columnName]);
+    exports.convertColumn = (columnName, columns, record, skipTypes) => {
+      const column = columns.find((x) => x.name === columnName);
+      const colType = column === null || column === void 0 ? void 0 : column.type;
+      const value = record[columnName];
+      if (colType && !skipTypes.includes(colType)) {
+        return exports.convertCell(colType, value);
+      }
+      return noop2(value);
+    };
+    exports.convertCell = (type, value) => {
+      if (type.charAt(0) === "_") {
+        const dataType = type.slice(1, type.length);
+        return exports.toArray(value, dataType);
+      }
+      switch (type) {
+        case PostgresTypes.bool:
+          return exports.toBoolean(value);
+        case PostgresTypes.float4:
+        case PostgresTypes.float8:
+        case PostgresTypes.int2:
+        case PostgresTypes.int4:
+        case PostgresTypes.int8:
+        case PostgresTypes.numeric:
+        case PostgresTypes.oid:
+          return exports.toNumber(value);
+        case PostgresTypes.json:
+        case PostgresTypes.jsonb:
+          return exports.toJson(value);
+        case PostgresTypes.timestamp:
+          return exports.toTimestampString(value);
+        case PostgresTypes.abstime:
+        case PostgresTypes.date:
+        case PostgresTypes.daterange:
+        case PostgresTypes.int4range:
+        case PostgresTypes.int8range:
+        case PostgresTypes.money:
+        case PostgresTypes.reltime:
+        case PostgresTypes.text:
+        case PostgresTypes.time:
+        case PostgresTypes.timestamptz:
+        case PostgresTypes.timetz:
+        case PostgresTypes.tsrange:
+        case PostgresTypes.tstzrange:
+          return noop2(value);
+        default:
+          return noop2(value);
       }
     };
-    exports.convertCell = (type, stringValue) => {
-      try {
-        if (stringValue === null)
-          return null;
-        if (type.charAt(0) === "_") {
-          let arrayValue = type.slice(1, type.length);
-          return exports.toArray(stringValue, arrayValue);
-        }
-        switch (type) {
-          case PostgresTypes.abstime:
-            return noop2(stringValue);
-          case PostgresTypes.bool:
-            return exports.toBoolean(stringValue);
-          case PostgresTypes.date:
-            return noop2(stringValue);
-          case PostgresTypes.daterange:
-            return exports.toDateRange(stringValue);
-          case PostgresTypes.float4:
-            return exports.toFloat(stringValue);
-          case PostgresTypes.float8:
-            return exports.toFloat(stringValue);
-          case PostgresTypes.int2:
-            return exports.toInt(stringValue);
-          case PostgresTypes.int4:
-            return exports.toInt(stringValue);
-          case PostgresTypes.int4range:
-            return exports.toIntRange(stringValue);
-          case PostgresTypes.int8:
-            return exports.toInt(stringValue);
-          case PostgresTypes.int8range:
-            return exports.toIntRange(stringValue);
-          case PostgresTypes.json:
-            return exports.toJson(stringValue);
-          case PostgresTypes.jsonb:
-            return exports.toJson(stringValue);
-          case PostgresTypes.money:
-            return exports.toFloat(stringValue);
-          case PostgresTypes.numeric:
-            return exports.toFloat(stringValue);
-          case PostgresTypes.oid:
-            return exports.toInt(stringValue);
-          case PostgresTypes.reltime:
-            return noop2(stringValue);
-          case PostgresTypes.time:
-            return noop2(stringValue);
-          case PostgresTypes.timestamp:
-            return exports.toTimestampString(stringValue);
-          case PostgresTypes.timestamptz:
-            return noop2(stringValue);
-          case PostgresTypes.timetz:
-            return noop2(stringValue);
-          case PostgresTypes.tsrange:
-            return exports.toDateRange(stringValue);
-          case PostgresTypes.tstzrange:
-            return exports.toDateRange(stringValue);
-          default:
-            return noop2(stringValue);
-        }
-      } catch (error2) {
-        console.log(`Could not convert cell of type ${type} and value ${stringValue}`);
-        console.log(`This is the error: ${error2}`);
-        return stringValue;
-      }
+    var noop2 = (value) => {
+      return value;
     };
-    var noop2 = (stringValue) => {
-      return stringValue;
-    };
-    exports.toBoolean = (stringValue) => {
-      switch (stringValue) {
+    exports.toBoolean = (value) => {
+      switch (value) {
         case "t":
           return true;
         case "f":
           return false;
         default:
-          return null;
+          return value;
       }
     };
-    exports.toDate = (stringValue) => {
-      return new Date(stringValue);
+    exports.toNumber = (value) => {
+      if (typeof value === "string") {
+        const parsedValue = parseFloat(value);
+        if (!Number.isNaN(parsedValue)) {
+          return parsedValue;
+        }
+      }
+      return value;
     };
-    exports.toDateRange = (stringValue) => {
-      let arr = JSON.parse(stringValue);
-      return [new Date(arr[0]), new Date(arr[1])];
+    exports.toJson = (value) => {
+      if (typeof value === "string") {
+        try {
+          return JSON.parse(value);
+        } catch (error2) {
+          console.log(`JSON parse error: ${error2}`);
+          return value;
+        }
+      }
+      return value;
     };
-    exports.toFloat = (stringValue) => {
-      return parseFloat(stringValue);
+    exports.toArray = (value, type) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+      const lastIdx = value.length - 1;
+      const closeBrace = value[lastIdx];
+      const openBrace = value[0];
+      if (openBrace === "{" && closeBrace === "}") {
+        let arr;
+        const valTrim = value.slice(1, lastIdx);
+        try {
+          arr = JSON.parse("[" + valTrim + "]");
+        } catch (_) {
+          arr = valTrim ? valTrim.split(",") : [];
+        }
+        return arr.map((val) => exports.convertCell(type, val));
+      }
+      return value;
     };
-    exports.toInt = (stringValue) => {
-      return parseInt(stringValue);
-    };
-    exports.toIntRange = (stringValue) => {
-      let arr = JSON.parse(stringValue);
-      return [parseInt(arr[0]), parseInt(arr[1])];
-    };
-    exports.toJson = (stringValue) => {
-      return JSON.parse(stringValue);
-    };
-    exports.toArray = (stringValue, type) => {
-      let stringEnriched = stringValue.slice(1, stringValue.length - 1);
-      let stringArray = stringEnriched.length > 0 ? stringEnriched.split(",") : [];
-      let array = stringArray.map((string) => {
-        return exports.convertCell(type, string);
-      });
-      return array;
-    };
-    exports.toTimestampString = (stringValue) => {
-      return stringValue.replace(" ", "T");
+    exports.toTimestampString = (value) => {
+      if (typeof value === "string") {
+        return value.replace(" ", "T");
+      }
+      return value;
     };
   }
 });
@@ -11381,7 +11366,7 @@ var require_version4 = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.version = void 0;
-    exports.version = "1.1.3";
+    exports.version = "1.2.1";
   }
 });
 
@@ -16789,7 +16774,8 @@ async function load_node({
         }
         const resolved = resolve(request.path, url.split("?")[0]);
         let response;
-        const filename = resolved.replace(options2.paths.assets, "").slice(1);
+        const prefix = options2.paths.assets || options2.paths.base;
+        const filename = (resolved.startsWith(prefix) ? resolved.slice(prefix.length) : resolved).slice(1);
         const filename_html = `${filename}/index.html`;
         const asset = options2.manifest.assets.find((d) => d.file === filename || d.file === filename_html);
         if (asset) {
@@ -17488,7 +17474,7 @@ function afterUpdate() {
 }
 var css = {
   code: "#svelte-announcer.svelte-1pdgbjn{clip:rect(0 0 0 0);-webkit-clip-path:inset(50%);clip-path:inset(50%);height:1px;left:0;overflow:hidden;position:absolute;top:0;white-space:nowrap;width:1px}",
-  map: `{"version":3,"file":"root.svelte","sources":["root.svelte"],"sourcesContent":["<!-- This file is generated by @sveltejs/kit \u2014 do not edit it! -->\\n<script>\\n\\timport { setContext, afterUpdate, onMount } from 'svelte';\\n\\n\\t// stores\\n\\texport let stores;\\n\\texport let page;\\n\\n\\texport let components;\\n\\texport let props_0 = null;\\n\\texport let props_1 = null;\\n\\texport let props_2 = null;\\n\\n\\tsetContext('__svelte__', stores);\\n\\n\\t$: stores.page.set(page);\\n\\tafterUpdate(stores.page.notify);\\n\\n\\tlet mounted = false;\\n\\tlet navigated = false;\\n\\tlet title = null;\\n\\n\\tonMount(() => {\\n\\t\\tconst unsubscribe = stores.page.subscribe(() => {\\n\\t\\t\\tif (mounted) {\\n\\t\\t\\t\\tnavigated = true;\\n\\t\\t\\t\\ttitle = document.title || 'untitled page';\\n\\t\\t\\t}\\n\\t\\t});\\n\\n\\t\\tmounted = true;\\n\\t\\treturn unsubscribe;\\n\\t});\\n<\/script>\\n\\n<svelte:component this={components[0]} {...(props_0 || {})}>\\n\\t{#if components[1]}\\n\\t\\t<svelte:component this={components[1]} {...(props_1 || {})}>\\n\\t\\t\\t{#if components[2]}\\n\\t\\t\\t\\t<svelte:component this={components[2]} {...(props_2 || {})}/>\\n\\t\\t\\t{/if}\\n\\t\\t</svelte:component>\\n\\t{/if}\\n</svelte:component>\\n\\n{#if mounted}\\n\\t<div id=\\"svelte-announcer\\" aria-live=\\"assertive\\" aria-atomic=\\"true\\">\\n\\t\\t{#if navigated}\\n\\t\\t\\t{title}\\n\\t\\t{/if}\\n\\t</div>\\n{/if}\\n\\n<style>#svelte-announcer{clip:rect(0 0 0 0);-webkit-clip-path:inset(50%);clip-path:inset(50%);height:1px;left:0;overflow:hidden;position:absolute;top:0;white-space:nowrap;width:1px}</style>"],"names":[],"mappings":"AAqDO,gCAAiB,CAAC,KAAK,KAAK,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,kBAAkB,MAAM,GAAG,CAAC,CAAC,UAAU,MAAM,GAAG,CAAC,CAAC,OAAO,GAAG,CAAC,KAAK,CAAC,CAAC,SAAS,MAAM,CAAC,SAAS,QAAQ,CAAC,IAAI,CAAC,CAAC,YAAY,MAAM,CAAC,MAAM,GAAG,CAAC"}`
+  map: null
 };
 var Root = create_ssr_component(($$result, $$props, $$bindings, slots) => {
   let { stores } = $$props;
@@ -17549,9 +17535,9 @@ function init(settings = default_settings) {
     amp: false,
     dev: false,
     entry: {
-      file: assets + "/_app/start-5e282d79.js",
+      file: assets + "/_app/start-bec81be7.js",
       css: [assets + "/_app/assets/start-464e9d0a.css"],
-      js: [assets + "/_app/start-5e282d79.js", assets + "/_app/chunks/vendor-7f03c391.js"]
+      js: [assets + "/_app/start-bec81be7.js", assets + "/_app/chunks/vendor-7530dd46.js"]
     },
     fetched: void 0,
     floc: false,
@@ -17630,7 +17616,7 @@ var module_lookup = {
     return results;
   })
 };
-var metadata_lookup = { "src/routes/__layout.svelte": { "entry": "pages/__layout.svelte-f5b03fd4.js", "css": ["assets/pages/__layout.svelte-1694319a.css"], "js": ["pages/__layout.svelte-f5b03fd4.js", "chunks/vendor-7f03c391.js"], "styles": [] }, ".svelte-kit/build/components/error.svelte": { "entry": "error.svelte-f2cad47d.js", "css": [], "js": ["error.svelte-f2cad47d.js", "chunks/vendor-7f03c391.js"], "styles": [] }, "src/routes/index.svelte": { "entry": "pages/index.svelte-0f4bc463.js", "css": [], "js": ["pages/index.svelte-0f4bc463.js", "chunks/vendor-7f03c391.js", "chunks/db-199d07e8.js"], "styles": [] }, "src/routes/get-winner.svelte": { "entry": "pages/get-winner.svelte-8b3ff6d5.js", "css": [], "js": ["pages/get-winner.svelte-8b3ff6d5.js", "chunks/vendor-7f03c391.js", "chunks/db-199d07e8.js"], "styles": [] }, "src/routes/results.svelte": { "entry": "pages/results.svelte-8ea64d04.js", "css": [], "js": ["pages/results.svelte-8ea64d04.js", "chunks/vendor-7f03c391.js", "chunks/db-199d07e8.js"], "styles": [] } };
+var metadata_lookup = { "src/routes/__layout.svelte": { "entry": "pages/__layout.svelte-aed224c0.js", "css": ["assets/pages/__layout.svelte-c5aaa007.css"], "js": ["pages/__layout.svelte-aed224c0.js", "chunks/vendor-7530dd46.js"], "styles": [] }, ".svelte-kit/build/components/error.svelte": { "entry": "error.svelte-4b2483ec.js", "css": [], "js": ["error.svelte-4b2483ec.js", "chunks/vendor-7530dd46.js"], "styles": [] }, "src/routes/index.svelte": { "entry": "pages/index.svelte-cefc76f8.js", "css": [], "js": ["pages/index.svelte-cefc76f8.js", "chunks/vendor-7530dd46.js", "chunks/db-916b1493.js"], "styles": [] }, "src/routes/get-winner.svelte": { "entry": "pages/get-winner.svelte-2680305c.js", "css": [], "js": ["pages/get-winner.svelte-2680305c.js", "chunks/vendor-7530dd46.js", "chunks/db-916b1493.js"], "styles": [] }, "src/routes/results.svelte": { "entry": "pages/results.svelte-8e2cf6eb.js", "css": [], "js": ["pages/results.svelte-8e2cf6eb.js", "chunks/vendor-7530dd46.js", "chunks/db-916b1493.js"], "styles": [] } };
 async function load_component(file) {
   const { entry, css: css2, js, styles } = metadata_lookup[file];
   return {
@@ -17836,20 +17822,29 @@ async function handler(event) {
     query,
     rawBody
   });
-  if (rendered) {
+  if (!rendered) {
     return {
-      isBase64Encoded: false,
-      statusCode: rendered.status,
-      ...splitHeaders(rendered.headers),
-      body: rendered.body
+      statusCode: 404,
+      body: "Not found"
+    };
+  }
+  const partial_response = {
+    statusCode: rendered.status,
+    ...split_headers(rendered.headers)
+  };
+  if (rendered.body instanceof Uint8Array) {
+    return {
+      ...partial_response,
+      isBase64Encoded: true,
+      body: Buffer.from(rendered.body).toString("base64")
     };
   }
   return {
-    statusCode: 404,
-    body: "Not found"
+    ...partial_response,
+    body: rendered.body
   };
 }
-function splitHeaders(headers) {
+function split_headers(headers) {
   const h = {};
   const m = {};
   for (const key in headers) {
